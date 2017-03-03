@@ -169,11 +169,8 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        return self.minimax_max_value(game, depth) if maximizing_player else self.minimax_min_value(game, depth)
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -213,8 +210,76 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
+
+        return self.alphabeta_max_value(game, float('-inf'), float('inf'), depth) if maximizing_player\
+            else self.alphabeta_min_value(game, float('-inf'), float('inf'), depth)
+
+    def minimax_max_value(self, game, remaining_ply_num):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
+        if remaining_ply_num == 1:
+            return self.score(game, game.active_player)
+        v = float('-inf')
+        best_move = (0, 0)
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        for move in game.get_legal_moves(player=game.active_player):
+            game_copy = game.copy()
+            util_value = self.minimax_min_value(game_copy.apply_move(move), remaining_ply_num-1)
+            if v < util_value[0]:
+                v = util_value[0]
+                best_move = move
+        return v, best_move
+
+    def minimax_min_value(self, game, remaining_ply_num):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise Timeout()
+        if remaining_ply_num == 1:
+            return self.score(game, game.active_player)
+        v = float('inf')
+        best_move = (0, 0)
+
+        for move in game.get_legal_moves(player=game.active_player):
+            game_copy = game.copy()
+            util_value = self.minimax_max_value(game_copy.apply_move(move), remaining_ply_num - 1)
+            if v > util_value[0]:
+                v = util_value[0]
+                best_move = move
+        return v, best_move
+
+    def alphabeta_max_value(self, game, alpha, beta, remaining_ply_num):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise Timeout()
+        if remaining_ply_num == 1:
+            return self.score(game, game.active_player)
+        v = float('-inf')
+        best_move = (0, 0)
+
+        for move in game.get_legal_moves(player=game.active_player):
+            game_copy = game.copy()
+            util_value = self.alphabeta_min_value(game_copy.apply_move(move), alpha, beta, remaining_ply_num-1)
+            if v < util_value[0]:
+                v = util_value[0]
+                best_move = move
+            if v >= beta:
+                return v, best_move
+            alpha = max(alpha, v)
+        return v, best_move
+
+    def alphabeta_min_value(self, game, alpha, beta, remaining_ply_num):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise Timeout()
+        if remaining_ply_num == 1:
+            return self.score(game, game.active_player)
+        v = float('inf')
+        best_move = (0, 0)
+
+        for move in game.get_legal_moves(player=game.active_player):
+            game_copy = game.copy()
+            util_value = self.alphabeta_max_value(game_copy.apply_move(move), alpha, beta, remaining_ply_num-1)
+            if v > util_value[0]:
+                v = util_value[0]
+                best_move = move
+            if v <= alpha:
+                return v, best_move
+            beta = min(beta, v)
+        return v, best_move
