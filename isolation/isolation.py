@@ -252,7 +252,6 @@ class Board(object):
         Generate the list of possible moves for an L-shaped motion (like a
         knight in chess).
         """
-
         if move == Board.NOT_MOVED:
             return self.get_blank_spaces()
 

@@ -140,6 +140,7 @@ def makeEvalStop(limit, timer, value=None):
     """
 
     def score(game, player):
+        print('limit', game.counts[0])
         if timer.time_left() < 0:
             raise TimeoutError("Timer expired during search. You must " +
                                "return an answer before the timer reaches 0.")
@@ -525,6 +526,7 @@ class Project1Test(unittest.TestCase):
                                           origins[idx], adversary_location,
                                           w, h)
             legal_moves = board.get_legal_moves()
+            print("in test:", timer.time_left())
             chosen_move = agentUT.get_move(board, legal_moves, timer.time_left)
 
             diff_total = abs(board.counts[0] - exact_counts[idx][0])
