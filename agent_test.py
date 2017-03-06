@@ -140,7 +140,6 @@ def makeEvalStop(limit, timer, value=None):
     """
 
     def score(game, player):
-        print('limit', game.counts[0])
         if timer.time_left() < 0:
             raise TimeoutError("Timer expired during search. You must " +
                                "return an answer before the timer reaches 0.")
@@ -537,6 +536,62 @@ class Project1Test(unittest.TestCase):
             self.assertTrue(chosen_move in legal_moves, INVALID_MOVE.format(
                 legal_moves, chosen_move))
 
+    @timeout(1)
+    def test_get_move_with_fixed_depth(self):
+        """ Test CustomPlayer.get_move interface with simple input """
+        h, w = 4, 4  # board size
+        test_depth = 2
+        starting_location = (0, 1)
+        adversary_location = (0, 0)  # top left corner
+        iterative_search = False
+        search_method = "minimax"
+        heuristic_dict = {'count':0}
+        def get_heuristic(heuristic_dict):
+           def heuristic(g, p):
+               heuristic_dict['count'] += 1
+               return 0.
+           return heuristic
+            # create a player agent & a game board
+        agentUT = game_agent.CustomPlayer(
+            test_depth, get_heuristic(heuristic_dict), iterative_search, search_method)
+
+        # Test that get_move returns a legal choice on an empty game board
+        board = isolation.Board(agentUT, 'null_agent', w, h)
+        board.apply_move(starting_location)
+        board.apply_move(adversary_location)
+        legal_moves = board.get_legal_moves()
+        move = agentUT.get_move(board, legal_moves, lambda: 99)
+        self.assertEqual(heuristic_dict['count'],6,'Wrong number of nodes visited')
+
+    @timeout(1)
+    def test_get_move_with_variable_depth(self):
+        """ Test CustomPlayer.get_move interface with simple input """
+        h, w = 4, 4  # board size
+        test_depth = 2
+        starting_location = (0, 1)
+        adversary_location = (0, 0)  # top left corner
+        iterative_search = True
+        search_method = "minimax"
+        heuristic_dict = {'count':0}
+        def get_heuristic(heuristic_dict):
+            def heuristic(g, p):
+                if heuristic_dict['count'] == 9: #stop at depth 3
+                    raise game_agent.Timeout()
+                heuristic_dict['count'] += 1
+                return 0.
+            return heuristic
+
+        # create a player agent & a game board
+        agentUT = game_agent.CustomPlayer(
+            test_depth, get_heuristic(heuristic_dict), iterative_search, search_method)
+
+        # Test that get_move returns a legal choice on an empty game board
+        board = isolation.Board(agentUT, 'null_agent', w, h)
+        board.apply_move(starting_location)
+        board.apply_move(adversary_location)
+        legal_moves = board.get_legal_moves()
+        move = agentUT.get_move(board, legal_moves, lambda: 99)
+        self.assertEqual(heuristic_dict['count'],9,'Wrong number of nodes visited')
 
 if __name__ == '__main__':
     unittest.main()

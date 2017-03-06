@@ -42,7 +42,67 @@ def custom_score(game, player):
         return float("-inf")
     if game.is_winner(player):
         return float("inf")
-    return float(1*len(game.get_legal_moves(player=player)) - 3*len(game.get_legal_moves(player=(game.get_opponent(player)))))
+
+    directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
+                  (1, -2), (1, 2), (2, -1), (2, 1)]
+
+    if game.get_player_location(player=player):
+        r, c = game.get_player_location(player=player)
+        player_move_num = len([(r + dr, c + dc) for dr, dc in directions if 0 <= r+dr < game.height and 0 <= c+dc < game.width])
+    else:
+        player_move_num = 1
+
+    if game.get_player_location(player=game.get_opponent(player)):
+        r, c = game.get_player_location(player=game.get_opponent(player))
+        oppo_move_num = len([(r + dr, c + dc) for dr, dc in directions if 0 <= r+dr < game.height and 0 <= c+dc < game.width])
+    else:
+        oppo_move_num = 1
+
+    r1, c1 = game.get_player_location(player=player)
+    r2, c2 = game.get_player_location(player=game.get_opponent(player))
+    return abs(r1-r2) + abs(c1-c2) + 2 * len(game.get_legal_moves(player=player))
+
+
+def custom_score_2(game, player):
+    if game.is_loser(player):
+        return float("-inf")
+    if game.is_winner(player):
+        return float("inf")
+
+    r1, c1 = game.get_player_location(player=player)
+    r2, c2 = game.get_player_location(player=game.get_opponent(player))
+
+    if (game.move_count) < game.width*game.height//3:
+        return float(1 * len(game.get_legal_moves(player=player)) - 2 * len(game.get_legal_moves(player=(game.get_opponent(player)))))
+    else:
+        return abs(r1-r2) + abs(c1-c2) + 4 * len(game.get_legal_moves(player=player))
+
+
+def custom_score_3(game, player):
+    if game.is_loser(player):
+        return float("-inf")
+    if game.is_winner(player):
+        return float("inf")
+
+    directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
+                  (1, -2), (1, 2), (2, -1), (2, 1)]
+
+    if game.get_player_location(player=player):
+        r, c = game.get_player_location(player=player)
+        player_move_num = len([(r + dr, c + dc) for dr, dc in directions if 0 <= r+dr < game.height and 0 <= c+dc < game.width])
+    else:
+        player_move_num = 1
+
+    if game.get_player_location(player=game.get_opponent(player)):
+        r, c = game.get_player_location(player=game.get_opponent(player))
+        oppo_move_num = len([(r + dr, c + dc) for dr, dc in directions if 0 <= r+dr < game.height and 0 <= c+dc < game.width])
+    else:
+        oppo_move_num = 1
+
+    if (game.move_count) < 20:
+        return float(1 * len(game.get_legal_moves(player=player)) - 1 * len(game.get_legal_moves(player=(game.get_opponent(player)))))
+    else:
+        return float(len(game.get_legal_moves(player=player)))
 
 
 class CustomPlayer:
@@ -76,7 +136,7 @@ class CustomPlayer:
     """
 
     def __init__(self, search_depth=3, score_fn=custom_score,
-                 iterative=True, method='minimax', timeout=10.):
+                 iterative=True, method='minimax', timeout=5.):
         self.search_depth = search_depth
         self.iterative = iterative
         self.score = score_fn
@@ -145,13 +205,20 @@ class CustomPlayer:
 
         try:
             if self.iterative:
+                # print("ID")
+                # print("move count:", game.move_count)
                 search_depth = 1  # initialize the depth for iterative deepening
-                while True:
-                    _, best_move = self.minimax(game, search_depth) if self.method == "minimax" \
+                max_depth = len(game.get_blank_spaces())
+                while search_depth <= max_depth:
+                    # print("depth: ", search_depth)
+                    best_score, best_move = self.minimax(game, search_depth) if self.method == "minimax" \
                         else self.alphabeta(game, search_depth)
                     search_depth += 1  # deepen the search depth
             else:
-                _, best_move = self.minimax(game, self.search_depth) if self.method == "minimax"\
+                # print("NOID")
+                # print("move count:", game.move_count)
+                # print("depth: ", self.search_depth)
+                best_score, best_move = self.minimax(game, self.search_depth) if self.method == "minimax"\
                     else self.alphabeta(game, self.search_depth)
         except:
             return best_move
@@ -189,8 +256,49 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        return self.minimax_max_value(game, depth) if maximizing_player else self.minimax_min_value(game, depth)
 
+        def minimax_max_value(game, remaining_ply_num, maximizing_player):
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise Timeout()
+            if (not game.get_legal_moves(player=game.active_player)) or remaining_ply_num == 0:
+                return self.score(game, game.active_player) if maximizing_player \
+                    else self.score(game, game.inactive_player)
+            v = float('-inf')
+
+            for move in game.get_legal_moves(player=game.active_player):
+                v = max(v, minimax_min_value(game.forecast_move(move), remaining_ply_num - 1, maximizing_player))
+            return v
+
+        def minimax_min_value(game, remaining_ply_num, maximizing_player):
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise Timeout()
+            if (not game.get_legal_moves(player=game.active_player)) or remaining_ply_num == 0:
+                return self.score(game, game.inactive_player) if maximizing_player \
+                    else self.score(game, game.active_player)
+            v = float('inf')
+
+            for move in game.get_legal_moves(player=game.active_player):
+                v = min(v, minimax_max_value(game.forecast_move(move), remaining_ply_num - 1, maximizing_player))
+            return v
+
+        if maximizing_player:
+            best_score = float('-inf')
+            best_move = None
+            for move in game.get_legal_moves(player=game.active_player):
+                v = minimax_min_value(game.forecast_move(move), depth - 1, maximizing_player)
+                if v > best_score:
+                    best_score = v
+                    best_move = move
+            return best_score, best_move
+        else:
+            best_score = float('inf')
+            best_move = None
+            for move in game.get_legal_moves(player=game.active_player):
+                v = minimax_max_value(game.forecast_move(move), depth - 1, maximizing_player)
+                if v < best_score:
+                    best_score = v
+                    best_move = move
+            return best_score, best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -230,71 +338,56 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        return self.alphabeta_max_value(game, alpha, beta, depth) if maximizing_player\
-            else self.alphabeta_min_value(game, alpha, beta, depth)
 
-    def minimax_max_value(self, game, remaining_ply_num):
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
-        if remaining_ply_num == 0:
-            return self.score(game, game.active_player), None
-        v = float('-inf')
-        best_move = (0, 0)
+        def alphabeta_max_value(game, alpha, beta, remaining_ply_num, maximizing_player):
+            # print("alphabeta_max_value  remaining_ply_num: ", remaining_ply_num)
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise Timeout()
+            if (not game.get_legal_moves(player=game.active_player)) or remaining_ply_num == 0:
+                return self.score(game, game.active_player) if maximizing_player \
+                    else self.score(game, game.inactive_player)
+            v = float('-inf')
 
-        for move in game.get_legal_moves(player=game.active_player):
-            util_value = self.minimax_min_value(game.forecast_move(move), remaining_ply_num-1)
-            if v < util_value[0]:
-                v = util_value[0]
-                best_move = move
-        return v, best_move
+            for move in game.get_legal_moves(player=game.active_player):
+                v = max(v, alphabeta_min_value(game.forecast_move(move),
+                                                    alpha, beta, remaining_ply_num - 1, maximizing_player))
+                if v >= beta:
+                    return v
+                alpha = max(alpha, v)
+            return v
 
-    def minimax_min_value(self, game, remaining_ply_num):
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
-        if remaining_ply_num == 0:
-            return self.score(game, game.inactive_player), None
-        v = float('inf')
-        best_move = (0, 0)
+        def alphabeta_min_value(game, alpha, beta, remaining_ply_num, maximizing_player):
+            # print("alphabeta_min_value  remaining_ply_num: ", remaining_ply_num)
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise Timeout()
+            if (not game.get_legal_moves(player=game.active_player)) or remaining_ply_num == 0:
+                return self.score(game, game.inactive_player) if maximizing_player \
+                    else self.score(game, game.active_player)
+            v = float('inf')
 
-        for move in game.get_legal_moves(player=game.active_player):
-            util_value = self.minimax_max_value(game.forecast_move(move), remaining_ply_num - 1)
-            if v > util_value[0]:
-                v = util_value[0]
-                best_move = move
-        return v, best_move
+            for move in game.get_legal_moves(player=game.active_player):
+                v = min(v, alphabeta_max_value(game.forecast_move(move),
+                                                    alpha, beta, remaining_ply_num - 1, maximizing_player))
+                if v <= alpha:
+                    return v
+                beta = min(beta, v)
+            return v
 
-    def alphabeta_max_value(self, game, alpha, beta, remaining_ply_num):
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
-        if remaining_ply_num == 0:
-            return self.score(game, game.active_player), None
-        v = float('-inf')
-        best_move = (0, 0)
-
-        for move in game.get_legal_moves(player=game.active_player):
-            util_value = self.alphabeta_min_value(game.forecast_move(move), alpha, beta, remaining_ply_num-1)
-            if v < util_value[0]:
-                v = util_value[0]
-                best_move = move
-            if v >= beta:
-                return v, best_move
-            alpha = max(alpha, v)
-        return v, best_move
-
-    def alphabeta_min_value(self, game, alpha, beta, remaining_ply_num):
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
-        if remaining_ply_num == 0:
-            return self.score(game, game.inactive_player), None
-        v = float('inf')
-        best_move = (0, 0)
-
-        for move in game.get_legal_moves(player=game.active_player):
-            util_value = self.alphabeta_max_value(game.forecast_move(move), alpha, beta, remaining_ply_num-1)
-            if v > util_value[0]:
-                v = util_value[0]
-                best_move = move
-            if v <= alpha:
-                return v, best_move
-            beta = min(beta, v)
-        return v, best_move
+        if maximizing_player:
+            best_score = float('-inf')
+            best_move = None
+            for move in game.get_legal_moves(player=game.active_player):
+                v = alphabeta_min_value(game.forecast_move(move), best_score, beta, depth - 1, maximizing_player)
+                if v > best_score:
+                    best_score = v
+                    best_move = move
+            return best_score, best_move
+        else:
+            best_score = float('inf')
+            best_move = None
+            for move in game.get_legal_moves(player=game.active_player):
+                v = alphabeta_max_value(game.forecast_move(move), alpha, best_score, depth - 1, maximizing_player)
+                if v < best_score:
+                    best_score = v
+                    best_move = move
+            return best_score, best_move
