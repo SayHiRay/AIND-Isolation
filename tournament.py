@@ -33,8 +33,8 @@ from sample_players import improved_score
 from game_agent import CustomPlayer
 from game_agent import custom_score, custom_score_2, custom_score_3
 
-NUM_MATCHES = 5  # number of matches against each opponent
-TIME_LIMIT = 150  # number of milliseconds before timeout
+NUM_MATCHES = 100  # number of matches against each opponent
+TIME_LIMIT = 160  # number of milliseconds before timeout
 
 TIMEOUT_WARNING = "One or more agents lost a match this round due to " + \
                   "timeout. The get_move() function must return before " + \
@@ -197,7 +197,7 @@ def test_end_game():
     print(winner)
 
 if __name__ == "__main__":
-    # main(custom_score)
+    main(custom_score)
     main(custom_score_2)
     main(custom_score_3)
     # test_end_game()

@@ -14,7 +14,7 @@ class Timeout(Exception):
     pass
 
 
-def custom_score(game, player):
+def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
@@ -43,24 +43,14 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
-                  (1, -2), (1, 2), (2, -1), (2, 1)]
-
-    if game.get_player_location(player=player):
-        r, c = game.get_player_location(player=player)
-        player_move_num = len([(r + dr, c + dc) for dr, dc in directions if 0 <= r+dr < game.height and 0 <= c+dc < game.width])
-    else:
-        player_move_num = 1
-
-    if game.get_player_location(player=game.get_opponent(player)):
-        r, c = game.get_player_location(player=game.get_opponent(player))
-        oppo_move_num = len([(r + dr, c + dc) for dr, dc in directions if 0 <= r+dr < game.height and 0 <= c+dc < game.width])
-    else:
-        oppo_move_num = 1
-
     r1, c1 = game.get_player_location(player=player)
     r2, c2 = game.get_player_location(player=game.get_opponent(player))
-    return abs(r1-r2) + abs(c1-c2) + 2 * len(game.get_legal_moves(player=player))
+
+    if (game.move_count) < game.width * game.height // 4:
+        return float(1 * len(game.get_legal_moves(player=player)) - 1 * len(
+            game.get_legal_moves(player=(game.get_opponent(player)))))
+    else:
+        return abs(r1 - r2) + abs(c1 - c2) +  4 * len(game.get_legal_moves(player=player))
 
 
 def custom_score_2(game, player):
@@ -69,21 +59,6 @@ def custom_score_2(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    r1, c1 = game.get_player_location(player=player)
-    r2, c2 = game.get_player_location(player=game.get_opponent(player))
-
-    if (game.move_count) < game.width*game.height//3:
-        return float(1 * len(game.get_legal_moves(player=player)) - 2 * len(game.get_legal_moves(player=(game.get_opponent(player)))))
-    else:
-        return abs(r1-r2) + abs(c1-c2) + 4 * len(game.get_legal_moves(player=player))
-
-
-def custom_score_3(game, player):
-    if game.is_loser(player):
-        return float("-inf")
-    if game.is_winner(player):
-        return float("inf")
-
     directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
                   (1, -2), (1, 2), (2, -1), (2, 1)]
 
@@ -99,10 +74,16 @@ def custom_score_3(game, player):
     else:
         oppo_move_num = 1
 
-    if (game.move_count) < 20:
-        return float(1 * len(game.get_legal_moves(player=player)) - 1 * len(game.get_legal_moves(player=(game.get_opponent(player)))))
-    else:
-        return float(len(game.get_legal_moves(player=player)))
+    return float(1 * len(game.get_legal_moves(player=player))/player_move_num - 2 * len(game.get_legal_moves(player=(game.get_opponent(player))))/oppo_move_num)
+
+
+def custom_score(game, player):
+    if game.is_loser(player):
+        return float("-inf")
+    if game.is_winner(player):
+        return float("inf")
+
+    return float(1 * len(game.get_legal_moves(player=player)) - 1 * len(game.get_legal_moves(player=(game.get_opponent(player)))))
 
 
 class CustomPlayer:
@@ -136,7 +117,7 @@ class CustomPlayer:
     """
 
     def __init__(self, search_depth=3, score_fn=custom_score,
-                 iterative=True, method='minimax', timeout=5.):
+                 iterative=True, method='minimax', timeout=15.):
         self.search_depth = search_depth
         self.iterative = iterative
         self.score = score_fn
