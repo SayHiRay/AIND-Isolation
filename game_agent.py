@@ -46,11 +46,13 @@ def custom_score_3(game, player):
     r1, c1 = game.get_player_location(player=player)
     r2, c2 = game.get_player_location(player=game.get_opponent(player))
 
-    if (game.move_count) < game.width * game.height // 4:
+    if (game.move_count) < game.width * game.height // 3:
         return float(1 * len(game.get_legal_moves(player=player)) - 1 * len(
             game.get_legal_moves(player=(game.get_opponent(player)))))
+
     else:
-        return abs(r1 - r2) + abs(c1 - c2) +  4 * len(game.get_legal_moves(player=player))
+        return float(1 * len(game.get_legal_moves(player=player)) - 2 * len(
+            game.get_legal_moves(player=(game.get_opponent(player)))))
 
 
 def custom_score_2(game, player):
