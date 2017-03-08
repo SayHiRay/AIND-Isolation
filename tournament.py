@@ -198,6 +198,6 @@ def test_end_game():
 
 if __name__ == "__main__":
     # main(custom_score)
-    # main(custom_score_2)
-    main(custom_score_3)
+    main(custom_score_2)
+    # main(custom_score_3)
     # test_end_game()
